@@ -6,14 +6,13 @@
 package uptime
 
 import (
-	"fmt"
 	"strconv"
 	"errors"
 )
 
 // convert to seconds
-func uptimeToSecs(up string) (int, error) {
-	invalid := errors.New(fmt.Sprintf("not a valid uptime string: %s", up))
+func UptimeToSecs(up string) (int, error) {
+	invalid := errors.New("not a valid uptime string:", up)
 	l := len(up)
 
 	// minimum is 00:00:00
@@ -22,16 +21,13 @@ func uptimeToSecs(up string) (int, error) {
 	}
 
 	// get seconds
-	ss := string(up[l-2:])
-	s, err := strconv.Atoi(ss)
+	s, err := strconv.Atoi(string(up[l-2:]))
 
 	// get minutes
-	sm := string(up[l-5:l-3])
-	m, err := strconv.Atoi(sm)
+	m, err := strconv.Atoi(string(up[l-5:l-3]))
 
 	// get hours
-	sh := string(up[l-8:l-6])
-	h, err := strconv.Atoi(sh)
+	h, err := strconv.Atoi(string(up[l-8:l-6]))
 
 	// get days
 	var sd = "0"
