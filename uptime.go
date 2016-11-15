@@ -6,48 +6,68 @@
 package uptime
 
 import (
+	"fmt"
 	"strconv"
-	"errors"
+	"strings"
 )
 
-// convert to seconds
-func UptimeToSecs(up string) (int, error) {
-	invalid := errors.New("not a valid uptime string:", up)
-	l := len(up)
+// accepts a routerOS uptime string, returns an int or an error
+func uptimeToSecs(s string) (int, error) {
 
-	// minimum is 00:00:00
+	var up, secs, mins, hours, days, weeks int
+	l := len(s)
+
+	// minimum string length should be 8 chars (00:00:01)
 	if l < 8 {
-		return 0, invalid
+		return up, fmt.Errorf("not a valid uptime string")
 	}
 
-	// get seconds
-	s, err := strconv.Atoi(string(up[l-2:]))
-
-	// get minutes
-	m, err := strconv.Atoi(string(up[l-5:l-3]))
-
-	// get hours
-	h, err := strconv.Atoi(string(up[l-8:l-6]))
-
-	// get days
-	var sd = "0"
-	if l > 9 {
-		sd = string(up[l-10:l-9])
+	// seconds range from 00 to 59
+	ss := string(s[l-2:])
+	secs, err := strconv.Atoi(ss)
+	if err != nil || secs < 0 || secs > 59 {
+		return up, fmt.Errorf("not a valid uptime string")
 	}
-	d, err := strconv.Atoi(sd)
 
-	// get weeks
-	var sw = "0"
-	if l > 11 {
-		sw = string(up[:l-11])
+	// minutes range from 00 to 59
+	sm := string(s[l-5 : l-3])
+	mins, err = strconv.Atoi(sm)
+	if err != nil || mins < 0 || mins > 59 {
+		return up, fmt.Errorf("not a valid uptime string")
 	}
-	w, err := strconv.Atoi(sw)
 
-	if err != nil {
-		return 0, invalid
+	// hours range from 00 to 23
+	sh := string(s[l-8 : l-6])
+	hours, err = strconv.Atoi(sh)
+	if err != nil || hours < 0 || hours > 23 {
+		return up, fmt.Errorf("not a valid uptime string")
 	}
-	
-	upsecs := w * 604800 + d * 86400 + h * 3600 + m * 60 + s
 
-	return upsecs, nil
+	// days range from 1 to 6 - if "d" is present
+	if i := strings.Index(s, "d"); i != -1 {
+		// d is found, i -1 is the index of the number of days
+		sd := string(s[i-1])
+		days, err = strconv.Atoi(sd)
+		if err != nil || days < 1 || days > 6 {
+			return up, fmt.Errorf("not a valid uptime string")
+		}
+	}
+
+	// weeks range from 1 to 52 - if "w" is present
+	if i := strings.Index(s, "w"); i != -1 {
+		// w is found, 0 to i is where weeks number is
+		sw := string(s[0:i])
+		weeks, err = strconv.Atoi(sw)
+		if err != nil || weeks < 1 || weeks > 52 {
+			return up, fmt.Errorf("not a valid uptime string")
+		}
+	}
+
+	// not looking for years; adds unnecessary complexity
+	// TODO: breaks when a year is found
+
+	// upsecs := w * 604800 + d * 86400 + h * 3600 + m * 60 + s
+	up = secs + (60 * mins) + (3600 * hours) + (86400 * days) + (604800 * weeks)
+
+	return up, nil
 }
